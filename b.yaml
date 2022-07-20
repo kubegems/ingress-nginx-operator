@@ -1,7 +1,0 @@
-apiVersion: networking.kubegems.io/v1beta1
-kind: NginxIngressController
-metadata:
-  name: b
-  namespace: cao
-spec:
-  ingressClass: b

@@ -21,10 +21,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	electionID = "ingress-controller-leader"
-)
-
 func clusterRoleForNginxIngressController(name string) *rbacv1.ClusterRole {
 	rules := []rbacv1.PolicyRule{
 		{
@@ -48,26 +44,14 @@ func clusterRoleForNginxIngressController(name string) *rbacv1.ClusterRole {
 			Verbs:     []string{"update"},
 		},
 		{
-			Resources:     []string{"configmaps"},
-			ResourceNames: []string{electionID},
-			APIGroups:     []string{""},
-			Verbs:         []string{"get", "update"},
-		},
-		{
 			Resources: []string{"configmaps"},
 			APIGroups: []string{""},
-			Verbs:     []string{"create"},
-		},
-		{
-			Resources:     []string{"leases"},
-			ResourceNames: []string{electionID},
-			APIGroups:     []string{"coordination.k8s.io"},
-			Verbs:         []string{"get", "update"},
+			Verbs:     []string{"get", "update", "create"},
 		},
 		{
 			Resources: []string{"leases"},
 			APIGroups: []string{"coordination.k8s.io"},
-			Verbs:     []string{"create"},
+			Verbs:     []string{"get", "update", "create"},
 		},
 		{
 			Resources: []string{"events"},

@@ -12,17 +12,18 @@ spec:
   ingressClass: cao
   service:
     extraAnnotations:
-      cao: nimab
+      mykey: myvalue
     extraLabels:
-      cao: nima
+      mykey: myvalue
     type: NodePort
   workload:
     extraLabels:
-      cao: nima
+      mykey: myvalue
     resources:
       requests:
         cpu: 200m
         memory: 200Mi
-  watchNamespace: ""
+  watchNamespace: "" # all ns
+  # https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/
   configMapData:
     error-log-path: "/var/log/nginx/error.log"

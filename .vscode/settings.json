@@ -1,5 +1,0 @@
-{
-    "yaml.schemas": {
-        "kubernetes://schema/networking.kubegems.io/v1beta1@nginxingresscontroller": "file:///home/slt/go/kubegems/ingress-nginx-operator/config/samples/networking_v1beta1_nginxingresscontroller.yaml"
-    }
-}
