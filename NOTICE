@@ -1,0 +1,10 @@
+ingress-nginx-operator
+Copyright 2022 The kubegems contributors
+
+This product includes software developed by
+the kubegems team and contributors.
+
+This software contains code derived from the nginx-ingress-operator\
+(https://github.com/nginxinc/nginx-ingress-operator) by Nginx Inc. 
+See the files in api/v1beta1/nginxingresscontroller_types.go and 
+controllers/ for details.

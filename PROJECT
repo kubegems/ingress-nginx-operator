@@ -1,0 +1,16 @@
+domain: kubegems.io
+layout:
+- go.kubebuilder.io/v3
+projectName: ingress-nginx-operator
+repo: kubegems.io/ingress-nginx-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kubegems.io
+  group: networking
+  kind: NginxIngressController
+  path: kubegems.io/ingress-nginx-operator/api/v1beta1
+  version: v1beta1
+version: "3"
