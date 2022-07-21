@@ -51,6 +51,12 @@ const (
 //+kubebuilder:rbac:groups=networking.kubegems.io,resources=nginxingresscontrollers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=networking.kubegems.io,resources=nginxingresscontrollers/finalizers,verbs=update
 
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=networking.k8s.io,resources=ingressclasses;ingresses;ingresses/status,verbs=get;create;delete;list;watch;update
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update
+//+kubebuilder:rbac:groups="",resources=services;endpoints;pods;secrets;events;configmaps;serviceaccounts;namespaces,verbs=create;update;get;list;watch;patch;delete
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *NginxIngressControllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
