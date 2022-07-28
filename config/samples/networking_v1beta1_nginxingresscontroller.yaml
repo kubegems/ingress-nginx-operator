@@ -1,15 +1,15 @@
 apiVersion: networking.kubegems.io/v1beta1
 kind: NginxIngressController
 metadata:
-  name: cao
-  namespace: cao
+  name: mynginx
+  namespace: ingress-nginx-operator-system
 spec:
   image:
     pullPolicy: IfNotPresent
     repository: registry.k8s.io/ingress-nginx/controller
     tag: v1.3.0
   replicas: 1
-  ingressClass: cao
+  ingressClass: mynginx
   service:
     extraAnnotations:
       mykey: myvalue
