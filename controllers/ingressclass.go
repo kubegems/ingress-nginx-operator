@@ -17,6 +17,8 @@ limitations under the License.
 package controllers
 
 import (
+	"fmt"
+
 	networking "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kubegems.io/ingress-nginx-operator/api/v1beta1"
@@ -28,7 +30,7 @@ func ingressClassForNginxIngressController(instance *v1beta1.NginxIngressControl
 			Name: instance.Spec.IngressClass,
 		},
 		Spec: networking.IngressClassSpec{
-			Controller: "kubegems.io/ingress-nginx",
+			Controller: fmt.Sprintf("kubegems.io/ingress-nginx-%v", instance.Spec.IngressClass),
 		},
 	}
 	return ic

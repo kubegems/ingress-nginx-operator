@@ -38,7 +38,7 @@ func generatePodArgs(instance *v1beta1.NginxIngressController) []string {
 		fmt.Sprintf("--configmap=$(POD_NAMESPACE)/%v", instance.Name),
 		fmt.Sprintf("--election-id=%s-lock", instance.Name),
 		fmt.Sprintf("--ingress-class=%v", instance.Spec.IngressClass),
-		"--controller-class=kubegems.io/ingress-nginx",
+		fmt.Sprintf("--controller-class=kubegems.io/ingress-nginx-%v", instance.Spec.IngressClass),
 	}
 
 	if instance.Spec.WatchNamespace != "" {
