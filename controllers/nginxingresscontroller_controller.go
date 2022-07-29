@@ -270,6 +270,13 @@ func (r *NginxIngressControllerReconciler) finalizeNginxIngressController(log lo
 		return err
 	}
 
+	ic := ingressClassForNginxIngressController(instance)
+	if err := r.Delete(context.TODO(), ic); err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+	}
+
 	log.Info("Successfully finalized NginxIngressController")
 	return nil
 }
