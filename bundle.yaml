@@ -450,7 +450,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: kubegems/ingress-nginx-operator:v0.1.1
+        image: kubegems/ingress-nginx-operator:v0.2.0
         livenessProbe:
           httpGet:
             path: /healthz
