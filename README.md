@@ -11,6 +11,7 @@ The following table shows the relation between ingress-nginx operator and contro
 | Ingress NGINX Operator | Ingress NGINX Controller |
 | ---------------------- | ------------------------ |
 | 0.1.x                  | 1.3.0                    |
+| 0.2.x                  | 1.3.0                    |
 
 ## Getting Started
 
