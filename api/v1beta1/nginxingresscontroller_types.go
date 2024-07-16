@@ -78,6 +78,10 @@ type Service struct {
 	// +optional
 	// +nullable
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+
+	// Ports of the Service.
+	// +optional
+	Ports []corev1.ServicePort `json:"ports"`
 }
 
 // Workload of the Ingress controller.

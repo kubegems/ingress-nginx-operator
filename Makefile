@@ -1,6 +1,8 @@
 
 # Image URL to use all building/pushing image targets
 IMG ?= kubegems/ingress-nginx-operator:v$(shell cat VERSION)
+IMG2 ?= registry.cn-beijing.aliyuncs.com/kubegems/ingress-nginx-operator:v$(shell cat VERSION)
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
@@ -69,13 +71,9 @@ build: generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
-.PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
-
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
+.PHONY: docker-release
+docker-release: ## Build docker image with the manager.
+	docker buildx build --platform linux/amd64,linux/arm64 --push -t ${IMG} -t  ${IMG2} .
 
 ##@ Deployment
 
@@ -108,7 +106,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
+	GOBIN=${PWD}/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 .PHONY: kustomize

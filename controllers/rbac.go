@@ -22,63 +22,58 @@ import (
 )
 
 func clusterRoleForNginxIngressController(name string) *rbacv1.ClusterRole {
-	rules := []rbacv1.PolicyRule{
-		{
-			Resources: []string{"namespaces"},
-			APIGroups: []string{""},
-			Verbs:     []string{"get"},
-		},
-		{
-			Resources: []string{"configmaps", "pods", "secrets", "endpoints", "services"},
-			APIGroups: []string{""},
-			Verbs:     []string{"get", "list", "watch"},
-		},
-		{
-			Resources: []string{"ingresses", "ingressclasses"},
-			APIGroups: []string{"networking.k8s.io"},
-			Verbs:     []string{"get", "list", "watch"},
-		},
-		{
-			Resources: []string{"ingresses/status"},
-			APIGroups: []string{"networking.k8s.io"},
-			Verbs:     []string{"update"},
-		},
-		{
-			Resources: []string{"configmaps"},
-			APIGroups: []string{""},
-			Verbs:     []string{"get", "update", "create"},
-		},
-		{
-			Resources: []string{"leases"},
-			APIGroups: []string{"coordination.k8s.io"},
-			Verbs:     []string{"get", "update", "create"},
-		},
-		{
-			Resources: []string{"events"},
-			APIGroups: []string{""},
-			Verbs:     []string{"create", "patch"},
+	return &rbacv1.ClusterRole{
+		ObjectMeta: v1.ObjectMeta{Name: name},
+		Rules: []rbacv1.PolicyRule{
+			{
+				Resources: []string{"namespaces"},
+				APIGroups: []string{""},
+				Verbs:     []string{"get"},
+			},
+			{
+				Resources: []string{"configmaps", "pods", "secrets", "endpoints", "services"},
+				APIGroups: []string{""},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+			{
+				Resources: []string{"ingresses", "ingressclasses"},
+				APIGroups: []string{"networking.k8s.io"},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+			{
+				Resources: []string{"ingresses/status"},
+				APIGroups: []string{"networking.k8s.io"},
+				Verbs:     []string{"update"},
+			},
+			{
+				Resources: []string{"configmaps"},
+				APIGroups: []string{""},
+				Verbs:     []string{"get", "update", "create"},
+			},
+			{
+				Resources: []string{"leases"},
+				APIGroups: []string{"coordination.k8s.io"},
+				Verbs:     []string{"get", "update", "create"},
+			},
+			{
+				Resources: []string{"events"},
+				APIGroups: []string{""},
+				Verbs:     []string{"create", "patch"},
+			},
 		},
 	}
-	rbac := &rbacv1.ClusterRole{
-		ObjectMeta: v1.ObjectMeta{
-			Name: name,
-		},
-		Rules: rules,
-	}
-	return rbac
 }
 
 func subjectForServiceAccount(namespace string, name string) rbacv1.Subject {
-	sa := rbacv1.Subject{
+	return rbacv1.Subject{
 		Kind:      "ServiceAccount",
 		Name:      name,
 		Namespace: namespace,
 	}
-	return sa
 }
 
 func clusterRoleBindingForNginxIngressController(name string) *rbacv1.ClusterRoleBinding {
-	crb := &rbacv1.ClusterRoleBinding{
+	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: v1.ObjectMeta{
 			Name: name,
 		},
@@ -88,5 +83,4 @@ func clusterRoleBindingForNginxIngressController(name string) *rbacv1.ClusterRol
 			APIGroup: "rbac.authorization.k8s.io",
 		},
 	}
-	return crb
 }

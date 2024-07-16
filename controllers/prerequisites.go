@@ -20,12 +20,14 @@ import (
 	"context"
 	"fmt"
 
-	"kubegems.io/ingress-nginx-operator/api/v1beta1"
-
 	"github.com/go-logr/logr"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"kubegems.io/ingress-nginx-operator/api/v1beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // checkPrerequisites creates all necessary objects before the deployment of a new Ingress Controller.
@@ -46,7 +48,7 @@ func (r *NginxIngressControllerReconciler) checkPrerequisites(log logr.Logger, i
 	// Assign this new ServiceAccount to the ClusterRoleBinding (if is not present already)
 	crb := clusterRoleBindingForNginxIngressController(clusterRoleName)
 
-	err = r.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName, Namespace: v1.NamespaceAll}, crb)
+	err = r.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, crb)
 	if err != nil {
 		return err
 	}
@@ -83,6 +85,16 @@ func (r *NginxIngressControllerReconciler) checkPrerequisites(log logr.Logger, i
 	return nil
 }
 
+func serviceAccountForNginxIngressController(instance *v1beta1.NginxIngressController, scheme *runtime.Scheme) (*corev1.ServiceAccount, error) {
+	svca := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{Name: instance.Name, Namespace: instance.Namespace},
+	}
+	if err := ctrl.SetControllerReference(instance, svca, scheme); err != nil {
+		return nil, err
+	}
+	return svca, nil
+}
+
 // create common resources shared by all the Ingress Controllers
 func (r *NginxIngressControllerReconciler) createCommonResources(log logr.Logger) error {
 	// Create ClusterRole and ClusterRoleBinding for all the NginxIngressController resources.
@@ -90,7 +102,7 @@ func (r *NginxIngressControllerReconciler) createCommonResources(log logr.Logger
 
 	cr := clusterRoleForNginxIngressController(clusterRoleName)
 
-	err = r.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName, Namespace: v1.NamespaceAll}, cr)
+	err = r.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, cr)
 
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -114,7 +126,7 @@ func (r *NginxIngressControllerReconciler) createCommonResources(log logr.Logger
 
 	crb := clusterRoleBindingForNginxIngressController(clusterRoleName)
 
-	err = r.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName, Namespace: v1.NamespaceAll}, crb)
+	err = r.Get(context.TODO(), types.NamespacedName{Name: clusterRoleName}, crb)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("no previous ClusterRoleBinding found, creating a new one.")
 		err = r.Create(context.TODO(), crb)

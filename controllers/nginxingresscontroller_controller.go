@@ -19,21 +19,24 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"kubegems.io/ingress-nginx-operator/api/v1beta1"
+	networkingv1beta1 "kubegems.io/ingress-nginx-operator/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"kubegems.io/ingress-nginx-operator/api/v1beta1"
-	networkingv1beta1 "kubegems.io/ingress-nginx-operator/api/v1beta1"
 )
 
 // NginxIngressControllerReconciler reconciles a NginxIngressController object
@@ -60,7 +63,7 @@ const (
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *NginxIngressControllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	log := log.FromContext(ctx).WithValues("nginxingresscontroller", req.NamespacedName)
 
 	instance := &networkingv1beta1.NginxIngressController{}
 	err := r.Get(ctx, req.NamespacedName, instance)
@@ -158,45 +161,42 @@ func (r *NginxIngressControllerReconciler) Reconcile(ctx context.Context, req ct
 			return ctrl.Result{}, err
 		}
 	}
-
-	svc, err := serviceForNginxIngressController(instance, r.Scheme)
-	if err != nil {
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instance.Name,
+			Namespace: instance.Namespace,
+		},
+	}
+	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, serviceMutateFn(svc, instance, r.Scheme)); err != nil {
+		log.Error(err, "Failed to create or update Service")
 		return ctrl.Result{}, err
 	}
-	var extraLabels map[string]string
-	var extraAnnotations map[string]string
-	if instance.Spec.Service != nil {
-		extraLabels = instance.Spec.Service.ExtraLabels
-		extraAnnotations = instance.Spec.Service.ExtraAnnotations
+	cm := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instance.Name,
+			Namespace: instance.Namespace,
+		},
 	}
-	res, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, serviceMutateFn(svc, instance.Spec.Service.Type, extraLabels, extraAnnotations))
-	log.V(1).Info(fmt.Sprintf("Service %s %s", svc.Name, res))
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	cm, err := configMapForNginxIngressController(instance, r.Scheme)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	res, err = controllerutil.CreateOrUpdate(ctx, r.Client, cm, configMapMutateFn(cm, instance.Spec.ConfigMapData))
-	log.V(1).Info(fmt.Sprintf("ConfigMap %s %s", svc.Name, res))
-	if err != nil {
+	if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, cm, configMapMutateFn(cm, instance, r.Scheme)); err != nil {
+		log.Error(err, "Failed to create or update ConfigMap")
 		return ctrl.Result{}, err
 	}
 
 	if !instance.Status.Deployed {
 		instance.Status.Deployed = true
-		err := r.Status().Update(ctx, instance)
-		if err != nil {
+		if err := r.Status().Update(ctx, instance); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
-
-	log.Info("Finish reconcile for NginxIngressController")
-
+	log.Info("Reconciliation finished")
 	return ctrl.Result{}, nil
+}
 
+func configMapMutateFn(cm *v1.ConfigMap, instance *v1beta1.NginxIngressController, scheme *runtime.Scheme) controllerutil.MutateFn {
+	return func() error {
+		cm.Data = instance.Spec.ConfigMapData
+		return ctrl.SetControllerReference(instance, cm, scheme)
+	}
 }
 
 func addDefaultFields(in *v1beta1.NginxIngressController) error {
@@ -244,7 +244,6 @@ func (r *NginxIngressControllerReconciler) createIfNotExists(object client.Objec
 	if err != nil && errors.IsAlreadyExists(err) {
 		return true, nil
 	}
-
 	return false, err
 }
 
@@ -286,4 +285,69 @@ func (r *NginxIngressControllerReconciler) SetupWithManager(mgr ctrl.Manager) er
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&networkingv1beta1.NginxIngressController{}).
 		Complete(r)
+}
+
+func serviceMutateFn(svc *corev1.Service, instance *v1beta1.NginxIngressController, scheme *runtime.Scheme) controllerutil.MutateFn {
+	service := instance.Spec.Service
+	if service == nil {
+		service = &v1beta1.Service{}
+	}
+	labels := instance.Labels
+	annotations := instance.Annotations
+	maps.Copy(labels, service.ExtraLabels)
+	maps.Copy(annotations, service.ExtraAnnotations)
+	selector := map[string]string{"app": instance.Name}
+	return func() error {
+		svc.Labels = labels
+		svc.Annotations = annotations
+		svc.Spec.Selector = selector
+		svc.Spec.Type = corev1.ServiceType(service.Type)
+		svc.Spec.Ports = mergePorts(svc.Spec.Ports, service.Ports)
+		return ctrl.SetControllerReference(instance, svc, scheme)
+	}
+}
+
+func mergePorts(cur, desired []corev1.ServicePort) []corev1.ServicePort {
+	ports := map[string]corev1.ServicePort{}
+	for _, port := range cur {
+		ports[port.Name] = port
+	}
+	// Ensure that the default ports are present
+	if httpport := ports["http"]; httpport.Name == "" {
+		ports["http"] = corev1.ServicePort{
+			Name: "http", Port: 80, TargetPort: intstr.IntOrString{IntVal: 80},
+		}
+	}
+	if httpsport := ports["https"]; httpsport.Name == "" {
+		ports["https"] = corev1.ServicePort{
+			Name: "https", Port: 443, TargetPort: intstr.IntOrString{IntVal: 443},
+		}
+	}
+	for _, desired := range desired {
+		if port, ok := ports[desired.Name]; ok {
+			ports[desired.Name] = mergePort(port, desired)
+		} else {
+			ports[desired.Name] = desired
+		}
+	}
+	return nil
+}
+
+func mergePort(dest, src corev1.ServicePort) corev1.ServicePort {
+	if src.Name != "" {
+		dest.Name = src.Name
+	}
+	if src.Protocol != "" {
+		dest.Protocol = src.Protocol
+	}
+	if src.Port != 0 {
+		dest.Port = src.Port
+	}
+	if src.TargetPort.Type != 0 {
+		dest.TargetPort = src.TargetPort
+	}
+	if src.NodePort != 0 {
+		dest.NodePort = src.NodePort
+	}
+	return dest
 }

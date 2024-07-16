@@ -1,6 +1,6 @@
 module kubegems.io/ingress-nginx-operator
 
-go 1.17
+go 1.22
 
 require (
 	github.com/go-logr/logr v1.2.0
