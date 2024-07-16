@@ -72,12 +72,12 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 binary: ## Build binary for linux/amd64.
-	GOOS=linux GOARCH=amd64 go build -o bin/manager-linux-amd64 main.go
-	GOOS=linux GOARCH=arm64 go build -o bin/manager-linux-arm64 main.go
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bin/manager-linux-amd64 main.go
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bin/manager-linux-arm64 main.go
 
 .PHONY: docker-release
 docker-release: binary## Build docker image with the manager.
-	docker buildx build --platform linux/amd64,linux/arm64 --push -t ${IMG} -t  ${IMG2} -f Dockerfile bin
+	docker buildx build --platform linux/amd64,linux/arm64 --push  -t  ${IMG2} -f Dockerfile bin
 
 ##@ Deployment
 
