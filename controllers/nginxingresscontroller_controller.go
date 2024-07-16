@@ -330,7 +330,11 @@ func mergePorts(cur, desired []corev1.ServicePort) []corev1.ServicePort {
 			ports[desired.Name] = desired
 		}
 	}
-	return nil
+	result := make([]corev1.ServicePort, 0, len(ports))
+	for _, port := range ports {
+		result = append(result, port)
+	}
+	return result
 }
 
 func mergePort(dest, src corev1.ServicePort) corev1.ServicePort {
